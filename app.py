@@ -4,6 +4,7 @@ matplotlib.use('Agg')
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 app = Flask(__name__)
 
@@ -258,26 +259,40 @@ def create_peak_anomaly_chart(data):
     plt.savefig("static/charts/peak_anomaly.png")
     plt.close()
     print("Peak anomaly chart created")
+
 @app.route("/")
 def dashboard():
-    create_top10_chart(df)
-    create_daily_trend_chart(df)
-    create_year_comparison_chart(df)
-    create_distribution_chart(df)
-    create_correlation_chart(df)
-    create_state_comparison_chart(df)
-    create_peak_anomaly_chart(df)
+
+    if not os.path.exists("static/charts/top10_states.png"):
+        create_top10_chart(df)
+
+    if not os.path.exists("static/charts/daily_trend.png"):
+        create_daily_trend_chart(df)
+
+    if not os.path.exists("static/charts/year_comparison.png"):
+        create_year_comparison_chart(df)
+
+    if not os.path.exists("static/charts/distribution.png"):
+        create_distribution_chart(df)
+
+    if not os.path.exists("static/charts/correlation.png"):
+        create_correlation_chart(df)
+
+    if not os.path.exists("static/charts/state_comparison.png"):
+        create_state_comparison_chart(df)
+
+    if not os.path.exists("static/charts/peak_anomaly.png"):
+        create_peak_anomaly_chart(df)
+
     # Calculate dashboard values
     total_states = len(state_columns)
     avg_total = round(df['Total'].mean(), 2)
     peak_total = round(df['Total'].max(), 2)
 
-    # Find state with highest average value
     state_averages = df[state_columns].mean()
     top_state = state_averages.idxmax()
     top_state_avg = round(state_averages.max(), 2)
 
-    # Send data to HTML
     return render_template(
         "index.html",
         total_states=total_states,
@@ -297,13 +312,11 @@ def analysis():
 
     filtered_df = df.copy()
 
-    # Apply year filter only if a specific year is selected
     if selected_year != "all":
         filtered_df = filtered_df[
             filtered_df["Year"].astype(str) == selected_year
         ]
 
-    # Apply state filter only if a specific state is selected
     if selected_state != "all" and selected_state in state_columns:
         state_average = round(filtered_df[selected_state].mean(), 2)
         top_state = selected_state
@@ -312,7 +325,7 @@ def analysis():
         state_averages = filtered_df[state_columns].mean()
         top_state = state_averages.idxmax()
         top_state_avg = round(state_averages.max(), 2)
-            # Calculate selected analysis value
+
     if selected_analysis == "maximum":
         analysis_value = round(filtered_df["Total"].max(), 2)
 
@@ -329,24 +342,21 @@ def analysis():
     create_daily_trend_chart(filtered_df, selected_state)
     create_year_comparison_chart(filtered_df, selected_state)
     create_distribution_chart(filtered_df, selected_state)
-    
 
     return render_template(
-    "index.html",
-    total_states=len(state_columns),
-    avg_total=round(filtered_df["Total"].mean(), 2),
-    peak_total=round(filtered_df["Total"].max(), 2),
-    top_state=top_state,
-    top_state_avg=top_state_avg,
-    states=sorted(state_columns),
-    years=sorted(df["Year"].unique()),
-    selected_state=selected_state,
-    selected_year=selected_year,
-    selected_analysis=selected_analysis,
-    analysis_value=analysis_value
-)
-
-    
+        "index.html",
+        total_states=len(state_columns),
+        avg_total=round(filtered_df["Total"].mean(), 2),
+        peak_total=round(filtered_df["Total"].max(), 2),
+        top_state=top_state,
+        top_state_avg=top_state_avg,
+        states=sorted(state_columns),
+        years=sorted(df["Year"].unique()),
+        selected_state=selected_state,
+        selected_year=selected_year,
+        selected_analysis=selected_analysis,
+        analysis_value=analysis_value
+    )
 
 if __name__ == "__main__":
     import os
